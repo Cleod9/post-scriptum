@@ -1,0 +1,23 @@
+{
+	"name": "easypromise",
+	"version": "0.1",
+    "author": "Greg McLeod <cleod9@gmail.com>",
+	"dependencies": {
+	}, 
+	"main": "./index",  
+	"license": "MIT",
+	"keywords": [
+		"mcleodgaming",
+		"promise",
+		"simple",
+		"easy",
+		"asynchronous",
+		"callback",
+		"spaghetti"
+  	],
+	"description": "A truly simple promise library for avoiding asynchronous callback spaghetti.",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/cleod9/easypromise"
+    }
+}
