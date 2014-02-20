@@ -226,11 +226,11 @@ rootEP.define('path2', someAsyncFunction, function(err, data) {
 //Give the children asynchronous calls to run
 rootEP.children['path1'].then(someAsyncFunction, function(err, data) {
 	//The default path
-	console.log('reached the end of path1's callbacks');
+	console.log('reached the end of path1\'s callbacks');
 });
 rootEP.children['path2'].then(someAsyncFunction, function(err, data) {
 	//The default path
-	console.log('reached the end of path2's callbacks');
+	console.log('reached the end of path2\'s callbacks');
 });
 
 //Execute the chain of promises
