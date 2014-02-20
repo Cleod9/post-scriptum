@@ -19,20 +19,19 @@ var asyncFn = function (data, callback1, callback2) {
 EP.create(asyncFn, [{ id: 1 }], function (data) {
 	console.log('inside the first function callback', data);
 	//Demonstrates how proceed will pass data along as params to the next async call
-	this.proceed([{ id: 2 }]);
-}, function(err) {
-	console.log('inside of the error callback');
-	this.proceed([{ id: 2 }]);
+	this.proceed([{ id: data.id + 1 }]);
+}, function(data) {
+	console.log('inside of the alternate callback');
+	this.proceed([{ id: data.id + 1 }]);
 }).before(function() {
 	console.log('inside before() of the first callback');
 }).then(asyncFn, function(data) {
 	console.log('inside the second function callback', data);
-	this.proceed([{ id: 3 }]);
+	this.proceedWith(['oh hey'], [{ id: data.id + 1 }]);
 }).after(function() {
 	console.log('inside after() of the first callback');
-}).then(asyncFn, function(data) {
-	console.log('inside the third function callback', data);
-	this.proceed();
+}).then(asyncFn, function(extra, data) {
+	console.log('inside the third function callback', data, ' w/ extra data: ', extra);
 }).after(function () {
-	console.log("Last function");
+	console.log("Inside the after() for the final callback");
 }).run();
