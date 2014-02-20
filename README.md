@@ -27,11 +27,11 @@ And that's it! You can then start using it by requiring the EasyPromise package:
 var EP = require('easypromise');
 ```
 
-You will then have access to the library through the variable `EP` (or whatever, you don't have to name it `EP`). Read below for usage details.
+You will then have access to the library through the variable `EP` (or whatever, you don't have to name it `EP`). Scroll down for usage details.
 
 ### For Browser ###
 
-Simply grab the library from `lib/easypromise.js` and include it in your web page.
+Simply grab the library from `lib/easypromise.js` and include it in your web page. You will then have access the global variable called `EasyPromise`.
 
 ## Basic Usage ##
 
