@@ -123,7 +123,7 @@ Ta-da! This is a nice, flattened version of the earlier code and it works withou
 
 EasyPromise works by taking an initial asynchronous function that has one or more callbacks as its trailing arguments, and chaining it together with other asynchronous functions that have callbacks of their own. The single available top-level function in the library is as folows:
 
-- `EasyPromise.create(func, [arg1, arg2 .... argN], callback1, callback2, ....callbackN)` - Initiates an EasyPromise function chain definition, and returns an EasyPromise object. (This is actually a shorcut to `new EasyPromise(…)`). The first parameter is a reference to the asynchronous function that you want to run. The second parameter is an array containing the args to pass to your function call, but you omit the callback(s). If the function takes no other arguments, you can omit this parameter altogether. All remaining parameters are the callback functions that are presumed to be the final arguments for your asynchronous function. **Note that your asynchronous function chain is not executed until `run()` is called, which will be described below.**
+- `EasyPromise.create(func, [arg1, arg2 .... argN], callback1, callback2, ....callbackN)` - Static method that initiates an EasyPromise chain definition, and returns an EasyPromise object. This is actually a shorcut to `new EasyPromise(…)` which is safe to use for the first call, though it is recommended that you let the library take care of constructing the remaining promises for you to avoid confusion. The first parameter is a reference to the asynchronous function that you want to call. The second parameter is an array containing the args to pass to your function call, but you omit the callback(s). If the function takes no other arguments, you can omit this parameter altogether. All remaining parameters are the callback functions that are presumed to be the final arguments for your asynchronous function. **Note that your asynchronous function chain is not executed until `run()` is called, which will be described below.**
 
 
 So to break things down a bit, as stated above the `create()` function will return what's called an EasyPromise object. This object has utility functions within it to allow you to chain together asynchronous function calls. So for example, the code below would be perfectly valid, though a bit redundant:
@@ -149,13 +149,13 @@ epObject = epObject.then(someAsyncFunction, function(err, data) {
 //Execute the chain of promises
 epObject.run();
 ```
-So from the above code, you should be able to see more clearly three EasyPromise functions exposed: `then()`, `proceed()`, and `run()`.  Below are a desecription of each:
+So from the above code, you should be able to see more clearly three EasyPromise functions exposed: `then()`, `proceed()`, and `run()`.  Below are a desecription of each of these functions which are all a part of the EasyPromise object prototype:
 
-- `EasyPromise.prototype.then(func, callback1, callback2, ....callbackN)` - Takes a function to run and its callback method(s), and returns a new EasyPromise child object created from them. Note that the other arguments for this asynchronous function are not placed here,  they are expected to be received from a `proceed()` call from the preceding asynchronous callback function **(very important!! see `proceed()` below).**
+- `then(func, callback1, callback2, ....callbackN)` - Takes a function to run and its callback method(s), and returns a new EasyPromise child object created from them. Note that the other arguments for this asynchronous function are not placed here,  they are expected to be received from a `proceed()` call from the preceding asynchronous callback function **(very important!! see `proceed()` below).**
 
-- `EasyPromise.prototype.proceed(fnArgs)` - Executes the next EasyPromise child,  accepting an array of arguments `fnArgs` to be applied to its asynchronous function call. The scope of callbacks with EasyPromise by default will be assigned to their EasyPromise wrapper, giving you access to EasyPromise functions via `this`. This also allows you to provide any number of arguments for the subsequent asynchronous function call. This is an important feature of the library, since rather than having you define arguments within the signature for `then()` itself, you can create them in the context of the preceding callback function.
+- `proceed(fnArgs)` - Executes the next EasyPromise child,  accepting an array of arguments `fnArgs` to be applied to its asynchronous function call. The scope of callbacks with EasyPromise by default will be assigned to their EasyPromise wrapper, giving you access to EasyPromise functions via `this`. This also allows you to provide any number of arguments for the subsequent asynchronous function call. This is an important feature of the library, since rather than having you define arguments within the signature for `then()` itself, you can create them in the context of the preceding callback function.
 
-- `EasyPromise.prototype.run()` - Starts at the first EasyPromise in the tree and executes its function. Will execute EasyPromise objects as each `proceed()` method is reached in each callback until completion. Because this function traverses up the promise chain before execution, you could actually call `run()` on any of the promise objects within the chain to begin the processing.
+- `run()` - Starts at the first EasyPromise in the tree and executes its function. Will execute EasyPromise objects as each `proceed()` method is reached in each callback until completion. Because this function traverses up the promise chain before execution, you could actually call `run()` on any of the promise objects within the chain to begin the processing.
 
 (These are the bare minimum functions required to use this library, scroll down more for advanced usage)
 
@@ -163,41 +163,41 @@ So from the above code, you should be able to see more clearly three EasyPromise
 
 ## Advanced Usage ##
 
-There are additional functions inside the EasyPromise objects that you can use that grant you additional flexibility in your callback flow. See below:
+There are additional functions from the EasyPromise object prototype that you can use which grant you additional flexibility in your callback flow. See below:
 
-- `EasyPromise.prototype.parent`- A reference to the parent EasyPromise object.
+- `parent`- A reference to the parent EasyPromise object.
 
-- `EasyPromise.prototype.children` - An object with key-value pairs mapping child EasyPromise names to their definitions. When using `then()` the key will always be `default` to identify the child. This is a helpful property to use if you have modified the binding of your callback, and want to pass the promise object as an additional argument from the preceeding callback via `proceedWith()` (see more below).
+- `children` - An object with key-value pairs mapping child EasyPromise names to their definitions. When using `then()` the key will always be `default` to identify the child. This is a helpful property to use if you have modified the binding of your callback, and want to pass the promise object as an additional argument from the preceeding callback via `proceedWith()` (see more below).
 
-- `EasyPromise.prototype.options` - An object containing the options for the EasyPromise object. Modify this through `config()` for ease of use. The available options are below
+- `options` - An object containing the options for the EasyPromise object. Modify this through `config()` for ease of use. The available options are below
 	- `asyncContext` - *See abind() function, same behavior*
 	- `callbackContext` - *See cbind() function, same behavior*
 	- `prependArgs` - Array of arguments to prepend to the promise's callback functions. (A bit redundant to use through `config()`, use via `proceedWith()` instead)
 
 
-- `EasyPromise.prototype.config(options)` - A chainable method to modify the options object for the EasyPromise object.
+- `config(options)` - A chainable method to modify the options object for the EasyPromise object.
 
-- `EasyPromise.prototype.abind(context)` - Provide a context to bind to the asynchronous function call. Useful when the function call you want to use needs a specific context (e.g. node-mysql's `connection` object). Note that this is a shortcut for `config({ asyncContext: context })`
+- `abind(context)` - Provide a context to bind to the asynchronous function call. Useful when the function call you want to use needs a specific context (e.g. node-mysql's `connection` object). Note that this is a shortcut for `config({ asyncContext: context })`
 
-- `EasyPromise.prototype.cbind(context)` - Provide a context to bind to the callback function. Most often than not, callbacks won't care about a specific context. But if you don't want the callback to be bound to the EasyPromise object itself, simply set it here. Keep in mind that this will prevent you from using `this.proceed()` in your EasyPromise chain, so you would need to store the value of that EasyPromise object outside the scope of the callbacks or pass it down with clever use of `proceedWith()`. Note that this is a shortcut for `config({ callbackContext: context })`. 
+- `cbind(context)` - Provide a context to bind to the callback function. Most often than not, callbacks won't care about a specific context. But if you don't want the callback to be bound to the EasyPromise object itself, simply set it here. Keep in mind that this will prevent you from using `this.proceed()` in your EasyPromise chain, so you would need to store the value of that EasyPromise object outside the scope of the callbacks or pass it down with clever use of `proceedWith()`. Note that this is a shortcut for `config({ callbackContext: context })`. 
 
-- `EasyPromise.prototype.prepend(prependArgs)` - Accepts an Array of arguments that will be prepended to the the callback(s) function signature for the current EasyPromise object. As stated with `config()`, usually you will exclusively want to prepend arguments via `proceedWith()` instead of this function. This way you utilize data within the scope of the callback. **(See `proceedWith()` for example)**
+- `prepend(prependArgs)` - Accepts an Array of arguments that will be prepended to the the callback(s) function signature for the current EasyPromise object. As stated with `config()`, usually you will exclusively want to prepend arguments via `proceedWith()` instead of this function. This way you utilize data within the scope of the callback. **(See `proceedWith()` for example)**
 
-- `EasyPromise.prototype.before(func)` - Assigns a function to be executed immediately before the asynchronous call is executed for the current EasyPromise object.
+- `before(func)` - Assigns a function to be executed immediately before the asynchronous call is executed for the current EasyPromise object.
 
-- `EasyPromise.prototype.after(func)` - Assigns a function to be executed immediately after the callback function is executed for the current EasyPromise object.
+- `after(func)` - Assigns a function to be executed immediately after the callback function is executed for the current EasyPromise object.
 
-- `EasyPromise.prototype.error(func)` - Assigns a function to capture exceptions for the current EasyPromise object. This function should accept a single argument that will contain the Error object.
+- `error(func)` - Assigns a function to capture exceptions for the current EasyPromise object. This function should accept a single argument that will contain the Error object.
 
-- `EasyPromise.prototype.catch(func)` - Assigns a function to capture exceptions for the entire EasyPromise tree. This function should accept a single argument that will contain the Error object. **IMPORTANT: This function can only be called directly before `run()` so that EasyPromise can properly wrap the exception handling (e.g. `catch().run()`). Because of this it returns a special object that limits you to the `run()` function.**
+- `catch(func)` - Assigns a function to capture exceptions for the entire EasyPromise tree. This function should accept a single argument that will contain the Error object. **IMPORTANT: This function can only be called directly before `run()` so that EasyPromise can properly wrap the exception handling (e.g. `catch().run()`). Because of this it returns a special object that limits you to the `run()` function.**
 
-- `EasyPromise.prototype.define(name, func, callback)` - Creates and assigns a named EasyPromise child to the current EasyPromise object. This function is similar to the use of `then()`, however instead of returning the new object it saves it as a child node of the current EasyPromise object and returns the original. This way you can define multiple named EasyPromise children, and target them via the `proceedTo()` function. Note that in reality when you use `then()`, the corresponding child EasyPromise object is actually named `'default'` automatically. This is one of the more powerful advanced features, allowing you to conditionally branch out into different promise paths from within your callbacks.
+- `define(name, func, callback)` - Creates and assigns a named EasyPromise child to the current EasyPromise object. This function is similar to the use of `then()`, however instead of returning the new object it saves it as a child node of the current EasyPromise object and returns the original. This way you can define multiple named EasyPromise children, and target them via the `proceedTo()` function. Note that in reality when you use `then()`, the corresponding child EasyPromise object is actually named `'default'` automatically. This is one of the more powerful advanced features, allowing you to conditionally branch out into different promise paths from within your callbacks.
 
-- `EasyPromise.prototype.proceedTo(name, fnArgs)` - Same behavior as `proceed()` but executes the next EasyPromise child specified by `name`. By default when you call `proceed()`, it is actually calling `proceedTo()` using the name `'default'`. With the help of this function you can selectively choose a particular promise path to travel down depending on the results of a callback.
+- `proceedTo(name, fnArgs)` - Same behavior as `proceed()` but executes the next EasyPromise child specified by `name`. By default when you call `proceed()`, it is actually calling `proceedTo()` using the name `'default'`. With the help of this function you can selectively choose a particular promise path to travel down depending on the results of a callback.
 
-- `EasyPromise.prototype.proceedWith(callbackPrependArgs, fnArgs)` - Executes the next EasyPromise child specified by `name` and passes an array of arguments `callbackPrependArgs` to be prepended to the callback function signature, followed by the second array of arguments `fnArgs` to be applied to its asynchronous function call. This works the same as the normal `proceed()` function but has a bonus feature of letting you pass additional arguments to a callback. So if you had a callback that had `(err, data)` as parameters, by calling `proceedWith(['customVal'], ['arg1', 'arg2'])` you would be effectively modifing the callback's parameters to be come `(customArg, err, data)`.
+- `proceedWith(callbackPrependArgs, fnArgs)` - Executes the next EasyPromise child specified by `name` and passes an array of arguments `callbackPrependArgs` to be prepended to the callback function signature, followed by the second array of arguments `fnArgs` to be applied to its asynchronous function call. This works the same as the normal `proceed()` function but has a bonus feature of letting you pass additional arguments to a callback. So if you had a callback that had `(err, data)` as parameters, by calling `proceedWith(['customVal'], ['arg1', 'arg2'])` you would be effectively modifing the callback's parameters to be come `(customArg, err, data)`.
 
-- `EasyPromise.prototype.proceedToWith(name, callbackPrependArgs, fnArgs)` - Same behavior as `proceedWith()` but executes the next EasyPromise child specified by `name`.
+- `proceedToWith(name, callbackPrependArgs, fnArgs)` - Same behavior as `proceedWith()` but executes the next EasyPromise child specified by `name`.
 
 
 If you decide to use these advanced features, you may want to consider defining EasyPromise objects individually instead of just one long chain. Remember, once you call `then()` you lose a direct reference to the current EasyPromise object. By assigning variables to hold onto to the result of `then()`, it will be easier to manage a large amount of nested pathing. See below for an example:
