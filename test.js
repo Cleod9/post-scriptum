@@ -16,7 +16,7 @@ var asyncFn = function (data, callback1, callback2) {
 	}, 1000);
 };
 
-var mode = 1;
+var mode = 2;
 
 if(mode === 1) {
 	//Run asyncFn with the the remaining arguments as parameters
