@@ -166,7 +166,7 @@ These are the bare minimum functions required to use this library, scroll down m
 
 There are many additional functions from the EasyPromise object prototype that you can use which grant you additional flexibility in your callback flow. 
 
-- `parent`- A reference to the parent EasyPromise object.
+- `_parent`- A reference to the parent EasyPromise object.
 
 - `children` - An object with key-value pairs mapping child EasyPromise names to their definitions. When using `then()` the key will always be `'default'` to identify the child. This is a helpful property to use if you have modified the binding of your callback, and want to pass the promise object itself as an additional argument from the preceding callback via `proceedWith()` (see more below).
 
