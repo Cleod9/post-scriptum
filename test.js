@@ -16,7 +16,7 @@ var asyncFn = function (data, callback1, callback2) {
 	}, 1000);
 };
 
-var mode = 2;
+var mode = 2; //Toggle this to run the different tests
 
 if(mode === 1) {
 	//Run asyncFn with the the remaining arguments as parameters
