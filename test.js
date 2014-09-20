@@ -120,7 +120,7 @@ if(mode === 1) {
 		}
 	}, function (err) {
 		console.log(err);
-	}).thenP(getPosts, function (rows) {
+	}).pthen(getPosts, function (rows) {
 		console.log('posts by this user: ', rows);
 	}).run();
 }

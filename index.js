@@ -1,5 +1,3 @@
-var fs = require('fs');
-
-eval(fs.readFileSync(__dirname + '/lib/easypromise.js').toString());
+var EasyPromise = require('./lib/easypromise.js');
 
 module.exports = EasyPromise;
