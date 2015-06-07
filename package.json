@@ -1,23 +1,23 @@
 {
-	"name": "easypromise",
-	"version": "0.2.0",
-    "author": "Greg McLeod <cleod9@gmail.com>",
+	"name": "post-scriptum",
+	"version": "0.3.0",
+  "author": "Greg McLeod <cleod9@gmail.com>",
 	"dependencies": {
 	}, 
-	"main": "./index",  
+	"main": "./post-scriptum",  
 	"license": "MIT",
 	"keywords": [
 		"mcleodgaming",
 		"promise",
-		"simple",
-		"easy",
+    "post",
+    "scriptum",
 		"asynchronous",
 		"callback",
 		"spaghetti"
-  	],
-	"description": "A truly simple promise library for avoiding asynchronous callback spaghetti.",
+  ],
+	"description": "A simple promise-like library for flattening callbacks.",
     "repository": {
-        "type": "git",
-        "url": "https://github.com/cleod9/easypromise"
+      "type": "git",
+      "url": "https://github.com/cleod9/post-scriptum"
     }
 }

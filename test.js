@@ -1,5 +1,5 @@
 //Runs a simple promise test case
-var EP = require('./index.js');
+var PS = require('./post-scriptum.js');
 
 /* Runs a simple promise test case */
 	
@@ -9,10 +9,11 @@ var asyncFn = function (data, callback1, callback2) {
 	//Simulate an async call
 	
 	setTimeout(function () { 
-		if(data.id == 1 && Math.random() > 0.5)
+		if(data.id == 1 && Math.random() > 0.5) {
 			callback2(data); //<- 50% chance of entering this second callback, this is to demonstrate potentially having multiple callbacks
-		else
+    } else {
 			callback1(data);
+    }
 	}, 1000);
 };
 
@@ -20,7 +21,7 @@ var mode = 2; //Toggle this to run the different tests
 
 if(mode === 1) {
 	//Run asyncFn with the the remaining arguments as parameters
-	 EP.create(asyncFn, [{ id: 1 }], function (data) {
+	 PS.create(asyncFn, [{ id: 1 }], function (data) {
 		console.log('inside the first function callback', data);
 		//Demonstrates how proceed will pass data along as params to the next async call
 		this.proceed([{ id: data.id + 1 }]);
@@ -70,15 +71,16 @@ if(mode === 1) {
 						results.push(db.users[i]);
 					}
 				}
-				if(Math.random() > 0.25)
+				if(Math.random() > 0.25) {
 					success(results);
-				else
-					error('Error has occured in getUser()'); //25% chance an error for testing purposes
+        } else {
+					error('Random error has occured in getUser()'); //25% chance an error for testing purposes
+        }
 			}, 1000);
 		};
 
 		//Create a promise object that has only a success and error handler
-		var promise = new EP(fn, function (results) {
+		var promise = new PS(fn, function (results) {
 			//Success handler right before wrapper promise callback executes
 			this.resolve(results);
 		}, function(err) {
@@ -103,7 +105,7 @@ if(mode === 1) {
 				success(results);
 			}, 1000);
 		};
-		var promise = new EP(fn, function (results) {
+		var promise = new PS(fn, function (results) {
 			//Success handler right before wrapper promise callback executes
 			this.resolve(results);
 		});
@@ -113,7 +115,7 @@ if(mode === 1) {
 
 	console.log("Initiating DB search...");
 
-	EP.create(getUser("bob"), function (rows) {
+	PS.create(getUser("bob"), function (rows) {
 		if(rows.length >= 0) {
 			console.log('found user:', rows[0]);
 			this.proceed([rows[0].user_id]);

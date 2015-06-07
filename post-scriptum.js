@@ -1,7 +1,7 @@
 /*******************************
-  EasyPromise Version 0.2.1
+  post-scriptum.js Version 0.3.0
   
-    A truly simple promise library for avoiding asynchronous callback spaghetti.
+    A simple promise-like library for flattening callbacks.
   
     The MIT License (MIT)
 
@@ -26,113 +26,122 @@
   THE SOFTWARE.
 *******************************/
 
-(function () {
+(function (context) {
   //Constructor
-  function EasyPromise (args) {
-    this.status = EasyPromise.STATUS_CODES.IDLE;
+  function PostScriptum (args) {
+    this.status = PostScriptum.STATUS_CODES.IDLE;
     
     var fullArgs = null;
     var tmpArgs = Array.prototype.slice.call(arguments);
-    if(tmpArgs.length === 1)
+    if(tmpArgs.length === 1) {
       fullArgs = args; //Assume initialized via create(), we expect to be receiving an array
-    else
+    } else {
       fullArgs = tmpArgs; //Assume initialized via 'new', we expect to be receiving parameters individually
+    }
 
     this.options = {
       async: false, //If the callback should be forced to asynchronous via setImmediate or setTimeout
-      asyncContext: null, //Reference to context of the asynchronous call (will default to the EasyPromise object)
-      callbackContext: null, //Reference to context for the callbacks (will default to the EasyPromise object)
-      prependArgs: [] //List of arguments to be prepended to this promise's callback functions
+      asyncContext: null, //Reference to context of the asynchronous call (will default to the PostScriptum object)
+      callbackContext: null, //Reference to context for the callbacks (will default to the PostScriptum object)
+      prependArgs: [] //List of arguments to be prepended to this instances's callback functions
     }
-    this.children = {}; //Reference to the next promises stored here
+    this.children = {}; //Reference to the next instances stored here
     
-    if (fullArgs.length <= 0)
-      throw new Error('Error, promise needs initial function as the first arg.');
+    if (fullArgs.length <= 0) {
+      throw new Error('Error, instance needs initial function as the first arg.');
+    }
     
     //The actual function we want to run is the first arg
     this.fn = fullArgs.shift();
     
-    if(typeof this.fn !== 'function' && !(this.fn && this.fn._isEasyPromise))
-      throw new Error('Error, expecting a function or promise as the first argument of the promise constructor');
+    if(typeof this.fn !== 'function' && !(this.fn && this.fn._isPostScriptum)) {
+      throw new Error('Error, expecting a function or PostScriptum instance as the first argument of the PostScriptum constructor');
+    }
       
-    if (fullArgs.length <= 0)
-      throw new Error('Error, promise expects at least 1 other argument (i.e. args/callback(s))');
+    if (fullArgs.length <= 0) {
+      throw new Error('Error, PostScriptum constructor expects at least 1 other argument (i.e. args/callback(s))');
+    }
       
     //Queue up rest of  arguments
     if (typeof fullArgs[0] !== 'function') {
-      if(typeof fullArgs[0].length === 'undefined')
-        throw new Error('Error, second argument of promise must be either an array of args, or a callback function.');
+      if(typeof fullArgs[0].length === 'undefined') {
+        throw new Error('Error, second argument of PostScriptum constructor must be either an array of args, or a callback function.');
+      }
       this.arguments = fullArgs[0].slice(0);
       fullArgs.splice(0, 1);
     } else {
       this.arguments = [];
     }
     
-    if (fullArgs.length <= 0)
-      throw new Error('Error, promise missing a callback function.');
+    if (fullArgs.length <= 0) {
+      throw new Error('Error, PostScriptum constructor missing a callback function.');
+    }
     
     //Assume the last remaining args are callbacks
     this.callbacks = fullArgs.slice(0);
     //Check the first one, we'll let the rest throw an error if there is a problem
-    if (typeof this.callbacks[0] !== 'function')
-      throw new Error('Error, promise expects the callback arguments to be of type "function"');
+    if (typeof this.callbacks[0] !== 'function') {
+      throw new Error('Error, PostScriptum constructor expects the callback arguments to be of type "function"');
+    }
   };
 
   //Static vars
-  EasyPromise.STATUS_CODES = { IDLE: 0, PENDING: 1, SUCCESS: 2, FAILURE: 3, CLOSED: 4 };
-  EasyPromise.BENCHMARK = false; //Enables benchmarking
+  PostScriptum.STATUS_CODES = { IDLE: 0, PENDING: 1, SUCCESS: 2, FAILURE: 3, CLOSED: 4 };
+  PostScriptum.BENCHMARK = false; //Enables benchmarking
 
   //Instance variables
-  EasyPromise.prototype._parent = null; //Reference to a preceding promise
-  EasyPromise.prototype.children = null; //Reference to a child promises
-  EasyPromise.prototype.fn = null; //Async func
-  EasyPromise.prototype.beforeFn = null; //Func to run before async func is executed
-  EasyPromise.prototype.afterFn = null; //Func to run after callback is returned
-  EasyPromise.prototype.errorFn = null; //Func to run after an exception is thrown
-  EasyPromise.prototype.catchFn = null; //Func to run after an exception is thrown (for full tree)
-  EasyPromise.prototype.finishFn = null; //Func to run after a promise chain finishes
-  EasyPromise.prototype.arguments = null; //List of arguments for the async func
-  EasyPromise.prototype.callbacks = null; //Callback func array
-  EasyPromise.prototype.options = null; //Options obj
-  EasyPromise.prototype.status = 0; //Current status of the promise object (0 = Idle, 1 = Pending, 2 = Success, 3 = Failure, 4 = Closed)
-  EasyPromise.prototype._finalArgs = null; //Temporary container for callback arguments to make it easier to do promise-promise chains
-  EasyPromise.prototype._hasError = false; //Tracks error status for closed promise
-  EasyPromise.prototype._pFlag = false; //Flag to indicate that this promise is nested within another promise
-  EasyPromise.prototype._catchFlag = false; //Flag for try-catch mode
-  EasyPromise.prototype._isEasyPromise = true; //For type checking without instanceof
-  EasyPromise.prototype._afterFinishFn = null; //Func to run after a promise chain finishes (private, internal use only)
-  EasyPromise.prototype._disposed = false; //Remember if this promise node was disposed or not
-  EasyPromise.prototype._time = 0; //Used for benchmarking
+  PostScriptum.prototype._parent = null; //Reference to a preceding PostScriptum instance
+  PostScriptum.prototype.children = null; //Reference to the child PostScriptum instances
+  PostScriptum.prototype.fn = null; //An asynchronous function that has a one or more trailing callback arguments
+  PostScriptum.prototype.beforeFn = null; //Func to run before async func is executed
+  PostScriptum.prototype.afterFn = null; //Func to run after callback is returned
+  PostScriptum.prototype.errorFn = null; //Func to run after an exception is thrown
+  PostScriptum.prototype.catchFn = null; //Func to run after an exception is thrown (for full tree)
+  PostScriptum.prototype.finishFn = null; //Func to run after a PostScriptum chain finishes
+  PostScriptum.prototype.arguments = null; //List of arguments for the async func
+  PostScriptum.prototype.callbacks = null; //Callback func array
+  PostScriptum.prototype.options = null; //Options obj
+  PostScriptum.prototype.status = 0; //Current status of the PostScriptum object (0 = Idle, 1 = Pending, 2 = Success, 3 = Failure, 4 = Closed)
+  PostScriptum.prototype._finalArgs = null; //Temporary container for callback arguments to make it easier to do PostScriptum-PostScriptum chains
+  PostScriptum.prototype._hasError = false; //Contains error status for closed PostScriptum instances
+  PostScriptum.prototype._isNested = false; //Flag to indicate that this PostScriptum instance is nested within another PostScriptum instance
+  PostScriptum.prototype._catchFlag = false; //Flag for try-catch mode
+  PostScriptum.prototype._isPostScriptum = true; //For type checking without instanceof
+  PostScriptum.prototype._afterFinishFn = null; //Func to run after a PostScriptum chain finishes (private, internal use only)
+  PostScriptum.prototype._disposed = false; //Remember if this PostScriptum node was disposed or not
+  PostScriptum.prototype._time = 0; //Used for benchmarking
 
   //Instance functions
 
-  EasyPromise.prototype.run = function () {
+  PostScriptum.prototype.run = function () {
     if (this._parent) {
-      //Find the top level promise
+      //Find the top level PostScriptum instance
       this._parent.run();
     } else {
-      if (EasyPromise.BENCHMARK) {
+      if (PostScriptum.BENCHMARK) {
         this._time = new Date().getTime();
       }
       //Execute
       this.execute();
     }
   };
-  EasyPromise.prototype.execute = function () {
-    //Execute the asynchronous function
+  PostScriptum.prototype.execute = function () {
+    //Executes the asynchronous function
     var self = this;
     var rootPromise = self.getRoot();
-    self.status = EasyPromise.STATUS_CODES.PENDING;
+    self.status = PostScriptum.STATUS_CODES.PENDING;
+
+    //Wrap the bulk in a function call so we can control when it starts
     var startExecution = function () {
       //Benchmarking
-      if (EasyPromise.BENCHMARK) {
+      if (PostScriptum.BENCHMARK) {
         self._time = new Date().getTime();
       }
       //If a 'before' function is set, run it before executing
       if (self.beforeFn) {
         self.beforeFn(self);
       }
-      //Function to make a wrapper for the original callbacks so that EasyPromise can call the next callback manually
+      //Function to make a wrapper for the original callbacks so that PostScriptum can call the next callback manually
       var callbackArr = [];
       var makeWrapper = function (callback) {
         return function () {
@@ -140,7 +149,7 @@
           var args = self.options.prependArgs.concat(Array.prototype.slice.call(arguments));
           
           //Grant success code
-          self.status = EasyPromise.STATUS_CODES.SUCCESS;
+          self.status = PostScriptum.STATUS_CODES.SUCCESS;
           
           //Run the callback in specified context
           callback.apply(self.options.callbackContext || self, args);
@@ -150,15 +159,15 @@
             self.afterFn(self);
           }
           
-          //If this promise is marked as closed, run the root promise's finish function
-          if (self.status === EasyPromise.STATUS_CODES.CLOSED) {
+          //If this PostScriptum instance is marked as closed, run the root PostScriptum instance's finish function
+          if (self.status === PostScriptum.STATUS_CODES.CLOSED) {
             if(rootPromise.finishFn) {
               rootPromise.finishFn.call(self);
             }
             if(rootPromise._afterfinishFn) {
               rootPromise._afterfinishFn.call(self);
             }
-            if (EasyPromise.BENCHMARK) {
+            if (PostScriptum.BENCHMARK) {
               var finishTime = (new Date().getTime()) - self.getRoot()._time;
               console.log(self.getRoot().arguments, finishTime + " ms");
             }
@@ -172,17 +181,18 @@
         callbackArr.push(makeWrapper(self.callbacks[i]));
       }
       
-       //For pflag'd promises, replace function with its returned promise
-      if(self._pFlag)
+       //For _isNested flagged PostScriptum instances, replace function with its returned PostScriptum instance
+      if(self._isNested) {
         self.fn = self.fn.apply(self.options.asyncContext || self, self.arguments);
+      }
       
-      if (self.fn && self.fn._isEasyPromise) {
-        //The function is of type EasyPromise, so we will run it like a promise
+      if (self.fn && self.fn._isPostScriptum) {
+        //The function is of type PostScriptum, so we will run it like a PostScriptum instance
         self.fn.getRoot()._afterfinishFn = function() {
-          //When complete, run the callback for the containing promise using the arguments from the inner promise's callback
+          //When complete, run the callback for the containing PostScriptum instance using the arguments from the inner PostScriptum instance's callback
           var fnIndex = (this._hasError) ? 1 : 0;
           if (fnIndex < callbackArr.length) {
-            callbackArr[fnIndex].apply(this, this._finalArgs); //At this point, inner promises have completed
+            callbackArr[fnIndex].apply(this, this._finalArgs); //At this point, inner PostScriptum instances have completed
           }
         };
         self.fn.run();
@@ -197,11 +207,12 @@
         try {
          startExecution();
         } catch (e) {
-          self.status = EasyPromise.STATUS_CODES.FAILURE;
-          if(self.errorFn)
+          self.status = PostScriptum.STATUS_CODES.FAILURE;
+          if(self.errorFn) {
             self.errorFn(e);
-          else
+          } else {
             rootPromise.catchFn(e);
+          }
         }
       } else {
         startExecution();
@@ -219,160 +230,162 @@
         try {
          startExecution();
         } catch (e) {
-          self.status = EasyPromise.STATUS_CODES.FAILURE;
-          if(self.errorFn)
+          self.status = PostScriptum.STATUS_CODES.FAILURE;
+          if(self.errorFn) {
             self.errorFn(e);
-          else
+          } else {
             rootPromise.catchFn(e);
+          }
         }
       } else {
         startExecution();
       }
     }
   };
-  EasyPromise.prototype.config = function (options) {
+  PostScriptum.prototype.config = function (options) {
     //Modifies the options variable
     for (var i in options) {
       this.options[i] = options[i];
     }
     return this;
   };
-  EasyPromise.prototype.async = function () {
+  PostScriptum.prototype.async = function () {
     //Shortcut to set async: true in config
     this.config({ async: true });
     return this;
   };
-  EasyPromise.prototype.abind = function (context) {
+  PostScriptum.prototype.abind = function (context) {
     //Bind context for asynchronous function
     this.options.asyncContext = context;
     
     return this;
   };
-  EasyPromise.prototype.cbind = function (context) {
+  PostScriptum.prototype.cbind = function (context) {
     //Bind context for the callback
     this.options.callbackContext = context;
     
     return this;
   };
-  EasyPromise.prototype.prepend = function (callbackPrependArgs) {
-    //Prepends custom args to the this promise's callbacks
+  PostScriptum.prototype.prepend = function (callbackPrependArgs) {
+    //Prepends custom args to the this PostScriptum instance's callbacks
     this.options.prependArgs = callbackPrependArgs;
 
     return this;
   };
-  EasyPromise.prototype.proceed = function (fnArgs) {
-    //Proceed to the next child promise
-    EasyPromise.prototype.proceedTo.call(this, 'default', fnArgs || []);
+  PostScriptum.prototype.proceed = function (fnArgs) {
+    //Proceed to the next child PostScriptum instance
+    PostScriptum.prototype.proceedTo.call(this, 'default', fnArgs || []);
   };
-  EasyPromise.prototype.proceedTo = function (name, fnArgs) {
+  PostScriptum.prototype.proceedTo = function (name, fnArgs) {
     //Execute the next callback (if it exists)
     if(this.children[name]) {
       this.children[name].arguments = this.children[name].arguments.concat(fnArgs || []);
       this.children[name].execute.call(this.children[name]);
     }
   };
-  EasyPromise.prototype.proceedWith = function (callbackPrependArgs, fnArgs) {
+  PostScriptum.prototype.proceedWith = function (callbackPrependArgs, fnArgs) {
     //Prepends custom args to the child's callback functions
     this.children['default'].prepend(callbackPrependArgs);
     this.proceed(fnArgs);
   };
-  EasyPromise.prototype.proceedToWith = function (name, callbackPrependArgs, fnArgs) {
-    //Prepends custom args to the child's callback functions for the specified child promise name
+  PostScriptum.prototype.proceedToWith = function (name, callbackPrependArgs, fnArgs) {
+    //Prepends custom args to the child's callback functions for the specified child PostScriptum instance name
     this.children[name].prepend(callbackPrependArgs);
     this.proceedTo(name, fnArgs);
   };
-  EasyPromise.prototype.define = function () {
-    //Defines a child promise for this current promise
+  PostScriptum.prototype.define = function () {
+    //Defines a child PostScriptum instance for this current instance
     var args = Array.prototype.slice.call(arguments);
     var name = args.shift();
-    var promise = new EasyPromise(args);
-    promise._parent = this;
-    this.children[name] = promise;
-    return promise;
+    var instance = new PostScriptum(args);
+    instance._parent = this;
+    this.children[name] = instance;
+    return instance;
   };
-  EasyPromise.prototype.parent = function () {
-    //Return the parent promise
+  PostScriptum.prototype.parent = function () {
+    //Return the parent PostScriptum instance
     return this._parent;
   };
-  EasyPromise.prototype.child = function (name) {
-    //Return a child promise specified by name
+  PostScriptum.prototype.child = function (name) {
+    //Return a child PostScriptum instance specified by name
     return this.children[name] || null;
   };
-  EasyPromise.prototype.pdefine = function () {
-    //Defines a promise that runs another promise (Q-style)
+  PostScriptum.prototype.pdefine = function () {
+    //Defines a PostScriptum instance that returns another PostScriptum instance
     var args = Array.prototype.slice.call(arguments);
-    var promise = this.define.apply(this, args);
-    promise._pFlag = true;
-    return promise;
+    var instance = this.define.apply(this, args);
+    instance._isNested = true;
+    return instance;
   };
-  EasyPromise.prototype.then = function () {
-    //Chain the next promise
+  PostScriptum.prototype.then = function () {
+    //Chain the next PostScriptum instance
     var args = Array.prototype.slice.call(arguments);
     args.unshift('default');
-    EasyPromise.prototype.define.apply(this, args);
+    PostScriptum.prototype.define.apply(this, args);
     return this.children['default'];
   };
-  EasyPromise.prototype.pthen = function () {
-    //Chain the next promise (identified as a promise function)
+  PostScriptum.prototype.pthen = function () {
+    //Chain the next PostScriptum-returning PostScriptum instance
     var args = Array.prototype.slice.call(arguments);
-    var promise = this.then.apply(this, args);
-    promise._pFlag = true;
-    return promise;
+    var instance = this.then.apply(this, args);
+    instance._isNested = true;
+    return instance;
   };
-  EasyPromise.prototype.after = function (fn) {
-    //Occurs after a callback is run but before the next promise
+  PostScriptum.prototype.after = function (fn) {
+    //Occurs after a callback is run but before the next PostScriptum instance
     this.afterFn = fn;
     
     return this;
   };
-  EasyPromise.prototype.before = function (fn) {
+  PostScriptum.prototype.before = function (fn) {
     //Occurs before the asynchronous function is run
     this.beforeFn = fn;
     
     return this;
   };
-  EasyPromise.prototype.resolve = function () {
+  PostScriptum.prototype.resolve = function () {
     //For Q-styled chaining, calls the success callback
     var args = Array.prototype.slice.call(arguments);
     this._finalArgs = args;
     this._hasError = false;
-    this.status = EasyPromise.STATUS_CODES.CLOSED;
+    this.status = PostScriptum.STATUS_CODES.CLOSED;
   };
-  EasyPromise.prototype.reject = function () {
+  PostScriptum.prototype.reject = function () {
     //For Q-styled chaining, calls the error callback
     var args = Array.prototype.slice.call(arguments);
     this._finalArgs = args;
     this._hasError = true;
-    this.status = EasyPromise.STATUS_CODES.CLOSED;
+    this.status = PostScriptum.STATUS_CODES.CLOSED;
   };
-  EasyPromise.prototype.getRoot = function () {
-    //Find the root promise
-    if(!this._parent)
+  PostScriptum.prototype.getRoot = function () {
+    //Find the root PostScriptum instance
+    if(!this._parent) {
       return this;
-    else
+    } else {
       return this._parent.getRoot();
+    }
   };
-  EasyPromise.prototype.finish = function (fn) {
-    //Attach a function to run when the full promise chain is finished (attaches to root promise only)
-    this.getRoot().finishFn = fn; //Function to run when a promise chain finishes
+  PostScriptum.prototype.finish = function (fn) {
+    //Attach a function to run when the full PostScriptum chain is finished (attaches to root PostScriptum instance only)
+    this.getRoot().finishFn = fn; //Function to run when a PostScriptum chain finishes
     return this;
   };
-  EasyPromise.prototype.error = function (fn) {
-    //Handle errors for a particular promise
+  PostScriptum.prototype.error = function (fn) {
+    //Handle errors for a particular PostScriptum instance
     this.errorFn = fn;
     
     return this;
   };
-  EasyPromise.prototype.catch = function (fn) {
-    //Handle errors for all promises. At this point only run() will be exposed
+  PostScriptum.prototype.catch = function (fn) {
+    //Handle errors for all PostScriptum instances. At this point only run() will be exposed, so this should be used last.
     this.getRoot()._catchFlag = true;
     this.getRoot().catchFn = fn;
     
     return this;
   };
 
-  //Cleanup the promise chain
-  EasyPromise.prototype.dispose = function () {
+  //Cleanup the PostScriptum chain
+  PostScriptum.prototype.dispose = function () {
     if (this._disposed) {
       return;
     }
@@ -448,30 +461,28 @@
 
 
   //Static functions
-  EasyPromise.create = function () {
-    //Starts chaining a promise. (The first promise will have a null parent)
+  PostScriptum.create = function () {
+    //Creates an empty PostScriptum instance (Same as calling new PostScriptum())
     var args = Array.prototype.slice.call(arguments);
-    var promise = new EasyPromise(args);
-    return promise;
+
+    return new PostScriptum(args);
   };
-  EasyPromise.pcreate = function () {
-    //Starts chaining a promise. (The first promise will have a null parent)
+  PostScriptum.pcreate = function () {
+    //Creates an empty PostScriptum instance that is designed to return another instance.
     var args = Array.prototype.slice.call(arguments);
-    if(args.length > 0 && args[0] && args[0]._isEasyPromise)
-      throw new Error("Error, EasyPromise.pcreate() does not accept a promise object directly. Please supply a function instead, or try using EasyPromise.create()");
-    var promise = EasyPromise.create.apply(EasyPromise, args);
-    promise._pFlag = true;
+    if(args.length > 0 && args[0] && args[0]._isPostScriptum) {
+      throw new Error("Error, PostScriptum.pcreate() does not accept a PostScriptum instance directly. Please supply a function instead, or try using PostScriptum.create()");
+    }
+    var instance = PostScriptum.create.apply(PostScriptum, args);
+    instance._isNested = true;
     
-    return promise;
+    return instance;
   };
 
   //Support for Node.js and browser
-  if (typeof exports !== 'undefined') {
-    if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = EasyPromise;
-    }
-    exports.EasyPromise = EasyPromise;
+  if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.exports) {
+    exports = module.exports = PostScriptum;
   } else {
-    this.EasyPromise = EasyPromise;
+    context.PS = PostScriptum;
   }
 }).call(this);
