@@ -2,7 +2,7 @@
 
 ----------
 
-**PostScriptum.js **is a promise-like JavaScript library designed to eradicate what is known as "callback hell/spaghetti", which can occur very easily when using a callback pattern extensively. The name comes from the acronym "P.S." or "post script" that is written at the end of written letters to indicate some additional information or afterthought. When writing many callbacks that rely on one another, it can sometimes be tricky to share information between them. PostScriptum makes passing information along multiple callback chains easier to manage.
+**PostScriptum.js** is a promise-like JavaScript library designed to eradicate what is known as "callback hell/spaghetti", which can occur very easily when using a callback pattern extensively. The name comes from the acronym "P.S." or "post script" that is written at the end of written letters to indicate some additional information or afterthought. When writing many callbacks that rely on one another, it can sometimes be tricky to share information between them. PostScriptum makes passing information along multiple callback chains easier to manage.
 
 The goals behind this library were as follows:
 
