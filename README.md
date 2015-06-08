@@ -2,7 +2,7 @@
 
 ----------
 
-**PostScriptum.js** is a promise-like JavaScript library designed to eradicate what is known as "callback hell/spaghetti", which can occur very easily when using a callback pattern extensively. The name comes from the acronym "P.S." or "post script" that is written at the end of written letters to indicate some additional information or afterthought. When writing many callbacks that rely on one another, it can sometimes be tricky to share information between them. PostScriptum makes passing information along multiple callback chains easier to manage.
+**PostScriptum.js** (or PS for short) is a promise-like JavaScript library designed to eradicate what is known as "callback hell/spaghetti", which can occur very easily when using a callback pattern extensively. The name comes from the acronym "P.S." or "post script" that is written at the end of written letters to indicate some additional information or afterthought. When writing many callbacks that rely on one another, it can sometimes be tricky to share information between them. PS makes passing information along multiple callback chains easier to manage.
 
 The goals behind this library were as follows:
 
@@ -90,7 +90,7 @@ inside a callback with data:  'four'
 done: 4
 
 ```
-As you can see this is completely unmanageable code. While there are definitely ways to work around this,  PostScriptum makes this easier by providing a flat construct for you. See the simplified version of the code below (Node.js):
+As you can see this is completely unmanageable code. While there are definitely ways to work around this, PS makes this easier by providing a flat construct for you. See the simplified version of the code below (Node.js):
 
 
 ```javascript
@@ -130,12 +130,12 @@ Ta-da! This is a nice, flattened version of the earlier code with very little ab
 
 ### So how does this work?
 
-PostScriptum works by taking an asynchronous function that has one or more callbacks as its trailing arguments, and saving the arguments in an array for later execution. As a result, you can define the behavior for a chain of these PostScriptum instances **before** actually exeucting anything. This all begins with `PostScriptum.create()`:
+PS works by taking an asynchronous function that has one or more callbacks as its trailing arguments, and saving the arguments in an array for later execution. As a result, you can define the behavior for a chain of these PS instances **before** actually exeucting anything. This all begins with `PS.create()`:
 
-- `PostScriptum.create(asyncFunc, [arg1, arg2 .... argN], callback1, callback2, ....callbackN)` - Static method that instantiates a new PostScriptum object and returns it. (This is actually a shorthand for writing `new PostScriptum(…)`). The first parameter is a reference to the asynchronous function that you want to call. The second parameter is an array containing the args to pass to your function call, but you omit the callback(s) arguments. If the function takes no other arguments besides a callback, you can omit this parameter altogether. All remaining parameters are the callback functions that are presumed to be the trailing arguments for your asynchronous function. **Note that your asynchronous function chain is not executed until `run()` is called, which will be described below.**
+- `PS.create(asyncFunc, [arg1, arg2 .... argN], callback1, callback2, ....callbackN)` - Static method that instantiates a new PostScriptum object and returns it. (This is actually a shorthand for writing `new PS(…)`). The first parameter is a reference to the asynchronous function that you want to call. The second parameter is an array containing the args to pass to your function call, but you omit the callback(s) arguments. If the function takes no other arguments besides a callback, you can omit this parameter altogether. All remaining parameters are the callback functions that are presumed to be the trailing arguments for your asynchronous function. **Note that your asynchronous function chain is not executed until `run()` is called, which will be described below.**
 
 
-So to break things down a bit, as stated above the `create()` function will return a PostScriptum object. This object has utility functions within it to allow you to chain together asynchronous function calls. So for example, the code below would be perfectly valid, though a bit redundant:
+So to break things down a bit, as stated above the `create()` function will return a PS object. This object has utility functions within it to allow you to chain together asynchronous function calls. So for example, the code below would be perfectly valid, though a bit redundant:
 
 ```javascript
 //Begin by creating an initial PostScriptum instance
@@ -143,7 +143,7 @@ var psInstance = PS.create(someAsyncFunction, ['arg1', 'arg2'], function(err, da
 	if(err) {
 		console.log(err);
 	} else {
-		//Context from PostScriptum exposes the proceed() function
+		//Context from PS exposes the proceed() function
 		this.proceed(['arg1', 'arg2']);
 	}
 });
@@ -158,65 +158,65 @@ psInstance = psInstance.then(someAsyncFunction, function(err, data) {
 //Execute the chain of PostScriptum instances
 psInstance.run();
 ```
-So from the above code, you should be able to see more clearly three different exposed PostScriptum functions: `then()`, `proceed()`, and `run()`. These functions are bound to the function callback's `this` by default for easy access. Below is a description of each of these functions which are all a part of the PostScriptum object prototype:
+So from the above code, you should be able to see more clearly three different exposed PS functions: `then()`, `proceed()`, and `run()`. These functions are bound to the function callback's `this` by default for easy access. Below is a description of each of these functions which are all a part of the PS object prototype:
 
-- `proceed(fnArgs)` - Executes the next PostScriptum child,  accepting an optional array of arguments `fnArgs` to be applied to its asynchronous function call. The context within PostScriptum callbacks is assigned to their PostScriptum instance by default, giving you access to PostScriptum functions via `this`. This is an important feature of the library, since it allows you to manipulate the behavior of your PostScriptum instance from within a callback. **(If you don't want the `this` context to be violated by PostScriptum, see the `cbind()` function)**
+- `proceed(fnArgs)` - Executes the next PS child,  accepting an optional array of arguments `fnArgs` to be applied to its asynchronous function call. The context within PS callbacks is assigned to their PS instance by default, giving you access to PS functions via `this`. This is an important feature of the library, since it allows you to manipulate the behavior of your PS instance from within a callback. **(If you don't want the `this` context to be violated by PostScriptum, see the `cbind()` function)**
 
-- `then(func, [arg1, arg2 .... argN], callback1, callback2, ....callbackN)` - Takes a function to run and its callback method(s), and returns a new PostScriptum child object with those parameters. Note that the non-callback arguments for this asynchronous function can alternatively be placed inside a `proceed()` call from the preceding asynchronous callback function
+- `then(func, [arg1, arg2 .... argN], callback1, callback2, ....callbackN)` - Takes a function to run and its callback method(s), and returns a new PS child object with those parameters. Note that the non-callback arguments for this asynchronous function can alternatively be placed inside a `proceed()` call from the preceding asynchronous callback function
 **Important: If you specify non-callback arguments both within `then()` and the preceeding `proceed()` call, the two argument arrays will be concatenated with the `then()` arguments listed first.** 
 
-- `run()` - Starts at the root PostScriptum instance in the tree and executes its asynchronous function using its provided arguments. It will execute subsequent PostScriptum objects as each `proceed()` method is reached in each callback until the entire chain has been evaulated.
-**(Side Note: Because this function traverses up the PostScriptum chain before execution, you could actually call `run()` on any of the PostScriptum objects within the chain to begin the processing)**
+- `run()` - Starts at the root PostScriptum instance in the tree and executes its asynchronous function using its provided arguments. It will execute subsequent PS objects as each `proceed()` method is reached in each callback until the entire chain has been evaulated.
+**(Side Note: Because this function traverses up the PS chain before execution, you could actually call `run()` on any of the PS objects within the chain to begin the processing)**
 
 These are the bare minimum functions required to use this library.
 
-**Confused a bit?** The tricky part is understanding the difference between the initial `create()` call, and the subsequent `then()`s. The first call will always require the arguments immediately since PostScriptum needs them to kick off the process after `run()` is called, however within `then()` the arguments can be injected via the `this.proceed()` call instead. This grants you the ability to dynamically manipulate the arguments of future asynchronous calls. As for the callback function, you can write it just like you would have otherwise, and simply add a `this.proceed()` when you'd like PostScriptum to move to the next asynchronous function. Other than that, I hope that you find this library fairly straightforward! For Advanced Usage continue reading below.
+**Confused a bit?** The tricky part is understanding the difference between the initial `create()` call, and the subsequent `then()`s. The first call will always require the arguments immediately since PS needs them to kick off the process after `run()` is called, however within `then()` the arguments can be injected via the `this.proceed()` call instead. This grants you the ability to dynamically manipulate the arguments of future asynchronous calls. As for the callback function, you can write it just like you would have otherwise, and simply add a `this.proceed()` when you'd like PS to move to the next asynchronous function. Other than that, I hope that you find this library fairly straightforward! For Advanced Usage continue reading below.
 
 ## Advanced Usage ##
 
-There are many additional functions from the PostScriptum object prototype that you can use which grant you additional flexibility in your callback flow. 
+There are many additional functions from the PS object prototype that you can use which grant you additional flexibility in your callback flow. 
 
 - `parent()`- Returns the parent PostScriptum object.
 
-- `children` - An object with key-value pairs mapping child PostScriptum names to their definitions. When using `then()` the key will always be `'default'` to identify the child. This is a helpful property to use if you have modified the binding of your callback, and want to pass the PostScriptum object itself as an additional argument from the preceding callback via `proceedWith()` (see more below).
+- `children` - An object with key-value pairs mapping child PostScriptum names to their definitions. When using `then()` the key will always be `'default'` to identify the child. This is a helpful property to use if you have modified the binding of your callback, and want to pass the PS object itself as an additional argument from the preceding callback via `proceedWith()` (see more below).
 
-- `options` - An object containing the options for the PostScriptum object. Modify this through `config()` for ease of use. The available options are below
+- `options` - An object containing the options for the PS object. Modify this through `config()` for ease of use. The available options are below
 	- `asyncContext` - *See abind() function, same behavior*
 	- `callbackContext` - *See cbind() function, same behavior*
-	- `prependArgs` - Array of arguments to prepend to the PostScriptum instance's callback functions. (See `proceedWith()` for equivalent)
+	- `prependArgs` - Array of arguments to prepend to the PS instance's callback functions. (See `proceedWith()` for equivalent)
 
 
-- `config(options)` - Chainable method to modify the options object for the PostScriptum object. Returns the same PostScriptum object that it was called on.
+- `config(options)` - Chainable method to modify the options object for the PS object. Returns the same PS object that it was called on.
 
-- `abind(context)` - Chainable method that provides a context to bind to the asynchronous function call. Useful when the function call you want to use needs a specific context (e.g. node-mysql's `connection` object). Note that this is a shortcut for `config({ asyncContext: context })`. Returns the same PostScriptum object that it was called on.
+- `abind(context)` - Chainable method that provides a context to bind to the asynchronous function call. Useful when the function call you want to use needs a specific context (e.g. node-mysql's `connection` object). Note that this is a shortcut for `config({ asyncContext: context })`. Returns the same PS object that it was called on.
 
-- `cbind(context)` - Chainable method that provides a context to bind to the callback function. Most often than not, callbacks you write probably won't care about a specific context. But if you don't want the callback to be bound to the PostScriptum object itself, simply set it here. Keep in mind that this will prevent you from using `this.proceed()` in your PostScriptum chain, so you would need to store the value of that PostScriptum object outside the scope of the callbacks or pass it down with clever use of `proceedWith()`. (Also note that this is a shortcut for `config({ callbackContext: context })`.)  This function returns the same PostScriptum object that it was called on.
+- `cbind(context)` - Chainable method that provides a context to bind to the callback function. Most often than not, callbacks you write probably won't care about a specific context. But if you don't want the callback to be bound to the PS object itself, simply set it here. Keep in mind that this will prevent you from using `this.proceed()` in your PostScriptum chain, so you would need to store the value of that PS object outside the scope of the callbacks or pass it down with clever use of `proceedWith()`. (Also note that this is a shortcut for `config({ callbackContext: context })`.)  This function returns the same PS object that it was called on.
 
-- `prepend(prependArgs)` - Accepts an Array of arguments that will be prepended to the callback(s) function signature for the current PostScriptum object. As stated with `config({prependArgs: ...})`, usually you will exclusively want to prepend arguments via `proceedWith()` instead of this function (especially since this function applies to only the current PostScriptum instance and not the subsequent one). Also, with `proceedWith()` you could utilize data within the scope of the callback. **(See `proceedWith()` for example)** Returns the same PostScriptum object that it was called on.
+- `prepend(prependArgs)` - Accepts an Array of arguments that will be prepended to the callback(s) function signature for the current PS object. As stated with `config({prependArgs: ...})`, usually you will exclusively want to prepend arguments via `proceedWith()` instead of this function (especially since this function applies to only the current PS instance and not the subsequent one). Also, with `proceedWith()` you could utilize data within the scope of the callback. **(See `proceedWith()` for example)** Returns the same PS object that it was called on.
 
-- `before(func(psInstance))` - Chainable method that assigns a function to be executed immediately before the asynchronous call is executed for the current PostScriptum object. Returns the same PostScriptum object that it was called on. The scope of this function is not manipulated by PostScriptum, and the current PostScriptum instance is received as the first argument of the function call.
+- `before(func(psInstance))` - Chainable method that assigns a function to be executed immediately before the asynchronous call is executed for the current PS object. Returns the same PS object that it was called on. The scope of this function is not manipulated by PS, and the current PS instance is received as the first argument of the function call.
 
-- `after(func(psInstance))` - Chainable method that assigns a function to be executed immediately after the callback function is executed for the current PostScriptum object. Returns the same PostScriptum object that it was called on. The scope of this function is not manipulated by PostScriptum, and the current PostScriptum instance is received as the first argument of the function call. 
+- `after(func(psInstance))` - Chainable method that assigns a function to be executed immediately after the callback function is executed for the current PS object. Returns the same PS object that it was called on. The scope of this function is not manipulated by PS, and the current PS instance is received as the first argument of the function call. 
 
-- `error(func(err))` - Chainable method that assigns a function to capture exceptions for the current PostScriptum object. This function should accept a single argument that will contain the Error object. Returns the same PostScriptum object that it was called on.
+- `error(func(err))` - Chainable method that assigns a function to capture exceptions for the current PS object. This function should accept a single argument that will contain the Error object. Returns the same PS object that it was called on.
 
-- `catch(func(err))` - Chainable method that assigns a function to capture exceptions for the entire PostScriptum tree. This function should accept a single argument that will contain the Error object. Returns the same PostScriptum object that it was called on.
+- `catch(func(err))` - Chainable method that assigns a function to capture exceptions for the entire PS tree. This function should accept a single argument that will contain the Error object. Returns the same PS object that it was called on.
 
-- `define(name, func, callback)` - Chainable method that creates and assigns a named PostScriptum child to the current PostScriptum object. This function is similar to the use of `then()`, however instead of returning the new object it saves it as a child node of the current PostScriptum object and returns the original. This way you can define multiple named PostScriptum children, and target them via the `proceedTo()` function. Note that in reality when you use `then()`, the corresponding child PostScriptum object is actually named `'default'` automatically.   **This is one of the more powerful advanced features, allowing you to conditionally branch out into different PostScriptum instance paths from within your callbacks. Though use it sparingly or it could get messy!** 
+- `define(name, func, callback)` - Chainable method that creates and assigns a named PS child to the current PS object. This function is similar to the use of `then()`, however instead of returning the new object it saves it as a child node of the current PS object and returns the original. This way you can define multiple named PS children, and target them via the `proceedTo()` function. Note that in reality when you use `then()`, the corresponding child PS object is actually named `'default'` automatically.   **This is one of the more powerful advanced features, allowing you to conditionally branch out into different PostScriptum instance paths from within your callbacks. Though use it sparingly or it could get messy!** 
 
-- `proceedTo(name, fnArgs)` - Same behavior as `proceed()` but executes the next PostScriptum child specified by `name`. By default when you call `proceed()`, it is actually calling `proceedTo()` using the name `'default'`. With the help of this function you can selectively choose a particular PostScriptum instance path to travel down depending on the results of a callback. Does not return a value.
+- `proceedTo(name, fnArgs)` - Same behavior as `proceed()` but executes the next PS child specified by `name`. By default when you call `proceed()`, it is actually calling `proceedTo()` using the name `'default'`. With the help of this function you can selectively choose a particular PS instance path to travel down depending on the results of a callback. Does not return a value.
 
-- `proceedWith(callbackPrependArgs, fnArgs)` - Executes the next PostScriptum child. It passes an array of arguments `callbackPrependArgs` to be prepended to the callback function signature, followed by the optional second array of remaining arguments `fnArgs` to be applied to its asynchronous function call. This works the same as the normal `proceed()` function but has a bonus feature of letting you pass additional arguments to a callback. So if you had a callback that had `(err, data)` as parameters, by calling `proceedWith(['customVal'], ['arg1', 'arg2'])` you would be effectively modifing the callback's parameters to be come `(customArg, err, data)`. Does not return a value.
+- `proceedWith(callbackPrependArgs, fnArgs)` - Executes the next PS child. It passes an array of arguments `callbackPrependArgs` to be prepended to the callback function signature, followed by the optional second array of remaining arguments `fnArgs` to be applied to its asynchronous function call. This works the same as the normal `proceed()` function but has a bonus feature of letting you pass additional arguments to a callback. So if you had a callback that had `(err, data)` as parameters, by calling `proceedWith(['customVal'], ['arg1', 'arg2'])` you would be effectively modifing the callback's parameters to be come `(customArg, err, data)`. Does not return a value.
 
-- `proceedToWith(name, callbackPrependArgs, fnArgs)` - Same behavior as `proceedWith()` but executes the next PostScriptum child specified by `name`. Does not return a value.
+- `proceedToWith(name, callbackPrependArgs, fnArgs)` - Same behavior as `proceedWith()` but executes the next PS child specified by `name`. Does not return a value.
 
 
-If you decide to use named PostScriptum instances along with all of these other advanced features, you may want to consider defining PostScriptum objects individually instead of just one long chain. Remember, once you call `then()` you lose a direct reference to the current PostScriptum object. By assigning variables to hold onto to the result of `then()`, it will be easier to manage a large amount of nested pathing. See below for an example:
+If you decide to use named PS instances along with all of these other advanced features, you may want to consider defining PS objects individually instead of just one long chain. Remember, once you call `then()` you lose a direct reference to the current PS object. By assigning variables to hold onto to the result of `then()`, it will be easier to manage a large amount of nested pathing. See below for an example:
 
 ```javascript
 /* Advanced Usage Example */
 
-//Start by saving the root PostScriptum object
+//Start by saving the root PS object
 var rootPS = PS.create(someAsyncFunction, ['starting'], function(err, data) {
 	//Chose a random path to proceed to
 	var path = (Math.random() > 0.66) ? 'path1' :  (Math.random() > 0.33) ? 'path2' : 'default';
@@ -248,10 +248,10 @@ rootPS.children['path2'].then(someAsyncFunction, function(extraArg, err, data) {
 	console.log('extra argument: ' + extraArg);
 });
 
-//Execute the chain of PostScriptum instances
+//Execute the chain of PS instances
 rootPS.run();
 ```
-So the above code defines 3 child PostScriptum objects for the root object: 1 default, and 2 additional children. When you execute the code, it will demonstrate the execution path as each of the `data` args from the callbacks are printed to the console. You will see that the chain has a 33% chance of hitting any one of the three final paths.
+So the above code defines 3 child PS objects for the root object: 1 default, and 2 additional children. When you execute the code, it will demonstrate the execution path as each of the `data` args from the callbacks are printed to the console. You will see that the chain has a 33% chance of hitting any one of the three final paths.
 
 ## Super Advanced Usage (Promise-Like callbacks)##
 
@@ -260,15 +260,15 @@ So the above code defines 3 child PostScriptum objects for the root object: 1 de
 
 There are five more functions that I didn't mention above which offer the ultimate control in breaking down asynchronous callback functions and resemble more traditional promise mechanisms. Their behavior is described below
 
-- `PostScriptum.pcreate(func, [arg1, arg2 .... argN], onResolved, onRejected)` - Works similar to `create()`, however PostScriptum is informed that `func` returns a PostScriptum object which allows special promise-like behavior. The callback arguments in this case are limited to a resolved handler and a rejected handler. This allows you to get your code to resemble a more traditional promise structure. See the upcoming code for an example.
+- `PS.pcreate(func, [arg1, arg2 .... argN], onResolved, onRejected)` - Works similar to `create()`, however PostScriptum is informed that `func` returns a PS object which allows special promise-like behavior. The callback arguments in this case are limited to a resolved handler and a rejected handler. This allows you to get your code to resemble a more traditional promise structure. See the upcoming code for an example.
 
-- `pthen(func, [arg1, arg2 .... argN], onResolved, onRejected)` - Works similar to `then()`, however PostScriptum is then informed that `func` returns a PostScriptum object which allows special promise-like behavior. The callback arguments in this case are limited to a resolved handler and a rejected handler. This allows you to get your code to resemble a more traditional promise structure. See the upcoming code for an example.
+- `pthen(func, [arg1, arg2 .... argN], onResolved, onRejected)` - Works similar to `then()`, however PostScriptum is then informed that `func` returns a PS object which allows special promise-like behavior. The callback arguments in this case are limited to a resolved handler and a rejected handler. This allows you to get your code to resemble a more traditional promise structure. See the upcoming code for an example.
 
 - `pdefine(name, func, [arg1, arg2 .... argN], onResolved, onRejected)` - Works similar to `define()`, but with the behavior of `pthen()`.
 
-- `resolve()` - Using `this.resolve()` within a callback will result in the parent PostScriptum object to enter its onResolved handler. Contrary to normal promises, you can pass any number of arguments here to the handler.
+- `resolve()` - Using `this.resolve()` within a callback will result in the parent PS object to enter its onResolved handler. Contrary to normal promises, you can pass any number of arguments here to the handler.
 
-- `reject()` - Using `this.reject()` within a callback will result in the parent PostScriptum object to enter its onRejected handler. Contrary to normal promises, you can pass any number of arguments here to the handler.
+- `reject()` - Using `this.reject()` within a callback will result in the parent PS object to enter its onRejected handler. Contrary to normal promises, you can pass any number of arguments here to the handler.
 
 **The below pseudo-code demonstrates how you might use this with node-mysql:**
 
@@ -278,7 +278,7 @@ var db = mysql.createPool({ /* config settings */ });
 
 //Creating a PostScriptum wrapper for node-mysql
 var query = function (query, params) {
-  var instance = PostScriptum.create(db.query, [query, params || []], function (err, rows, fields) {
+  var instance = PS.create(db.query, [query, params || []], function (err, rows, fields) {
     if (err) {
       this.reject(err)
     } else {
@@ -291,7 +291,7 @@ var query = function (query, params) {
 
 //Get user function
 var authenticateUser = function (username, password) {
-  var instance = PostScriptum.pcreate(query, ['SELECT * FROM users WHERE username = ? AND password = ?', [username, password]], function (rows, fields) {
+  var instance = PS.pcreate(query, ['SELECT * FROM users WHERE username = ? AND password = ?', [username, password]], function (rows, fields) {
     if (rows.length <= 0)
       this.reject("User not found or password incorrect."); //Pass message to the parent's rejection handler
     } else {
@@ -306,7 +306,7 @@ var authenticateUser = function (username, password) {
 //Get user's posts
 var getUserPosts = function (user_id) {
   //Can alternatively use the normal create() like below, PostScriptum automatically detects it returned a PS instance
-  var instance = PostScriptum.create(query('SELECT * FROM posts WHERE creator_id = ?', [user_id]), function (rows, fields) {
+  var instance = PS.create(query('SELECT * FROM posts WHERE creator_id = ?', [user_id]), function (rows, fields) {
     this.resolve(rows); //Pass posts array to the parent's resolved handler
   } function (err) {
     this.reject(err); //Pass query()'s error into the parent's rejection handler
@@ -317,7 +317,7 @@ var getUserPosts = function (user_id) {
 
 /* Let's see the above functions in action! */
 
-PostScriptum.create(authenticateUser('bob', 'pass123'), function (user) {
+PS.create(authenticateUser('bob', 'pass123'), function (user) {
   //This is the resolved handler, we'll pass user_id to getUserPosts() and prepend the user object as a callback arg
   this.proceedWith([user], [user.user_id])
 }, function (err) {
@@ -331,11 +331,11 @@ PostScriptum.create(authenticateUser('bob', 'pass123'), function (user) {
 }).run();
 ```
 
-The above code demonstrates how PostScriptum can be used to break down your callback routines into increasingly smaller functions, and separate these functions from your main code. To summarize, what I did was wrap node-mysql's `connection.query()` function into a PostScriptum object. I then created other functions that run my new version of query() to perform the tasks of getting a user and post information. Once I have defined these routines, I can then make use of them in whatever combination I'd like and share values between them. 
+The above code demonstrates how PostScriptum can be used to break down your callback routines into increasingly smaller functions, and separate these functions from your main code. To summarize, what I did was wrap node-mysql's `connection.query()` function into a PS object. I then created other functions that run my new version of query() to perform the tasks of getting a user and post information. Once I have defined these routines, I can then make use of them in whatever combination I'd like and share values between them. 
 
-The trick here is that PostScriptum acts more like building blocks for asynchronus function handling, since nothing is ever executed until you call `run()`. It also becomes a conduit for passing resolved PostScriptum instance values down potentially long chains of PostScriptum instances. As a result, there should never be a need for any nested callbacks in your code, and you can decide for yourself when you want to use a traditional callback, and when you want to use more promise-like callback.
+The trick here is that PS acts more like building blocks for asynchronus function handling, since nothing is ever executed until you call `run()`. It also becomes a conduit for passing resolved PS instance values down potentially long chains of PS instances. As a result, there should never be a need for any nested callbacks in your code, and you can decide for yourself when you want to use a traditional callback, and when you want to use more promise-like callback.
 
-So if you're looking for an alternative to promise libraries to manage your asyncronous callbacks, give PostScriptum a shot! Also be sure to check out the **test.js** file for further examples.
+So if you're looking for an alternative to promise libraries to manage your asyncronous callbacks, give PS a shot! Also be sure to check out the **test.js** file for further examples.
 
 ----------
 

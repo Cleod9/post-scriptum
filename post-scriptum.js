@@ -1,5 +1,5 @@
 /*******************************
-  post-scriptum.js Version 0.3.1
+  post-scriptum.js Version 0.3.2
   
     A simple promise-like library for flattening callbacks.
   
