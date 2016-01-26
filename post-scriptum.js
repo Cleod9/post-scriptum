@@ -1,5 +1,5 @@
 /*******************************
-  post-scriptum.js Version 0.3.2
+  post-scriptum.js Version 0.3.3
   
     A simple promise-like library for flattening callbacks.
   
@@ -29,6 +29,7 @@
 (function (context) {
   //Constructor
   function PostScriptum (args) {
+	console.warn("No seriously, stop using this library and go grab Bluebird: https://github.com/petkaantonov/bluebird/");
     this.status = PostScriptum.STATUS_CODES.IDLE;
     
     var fullArgs = null;

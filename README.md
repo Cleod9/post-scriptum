@@ -2,6 +2,14 @@
 
 ----------
 
+**ATTENTION: THIS LIBRARY HAS BEEN DEPRECATED!!!**
+
+Please [read here](http://www.greg-mcleod.com/index.php/postscriptum-js-deprecated-and-some-tips-on-js-promises/) for details.
+
+In the meantime, grab a real Promise library such as [Bluebird](https://github.com/petkaantonov/bluebird/).
+
+----------
+
 **PostScriptum.js** (or PS for short) is a promise-like JavaScript library designed to eradicate what is known as "callback hell/spaghetti", which can occur very easily when using a callback pattern extensively. The name comes from the acronym "P.S." or "post script" that is written at the end of written letters to indicate some additional information or afterthought. When writing many callbacks that rely on one another, it can sometimes be tricky to share information between them. PS makes passing information along multiple callback chains easier to manage.
 
 The goals behind this library were as follows:
@@ -273,7 +281,7 @@ There are five more functions that I didn't mention above which offer the ultima
 **The below pseudo-code demonstrates how you might use this with node-mysql:**
 
 ```javascript
-var mysql = mysql = require("mysql");
+var mysql = require("mysql");
 var db = mysql.createPool({ /* config settings */ });
 
 //Creating a PostScriptum wrapper for node-mysql
